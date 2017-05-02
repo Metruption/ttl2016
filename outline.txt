@@ -1,0 +1,188 @@
+
+ATTENTION GETTING
+	Everyone get out your phone and raise it in the air.
+	If you don't have a barcode scanner then please download a barcode scanner app.
+	There will be barcodes.
+	I will talk about evil barcodes. Any evil barcodes will be clearly marked.
+	Raise your hand if you'd trust the contents of a QR code you saw at work or school before hearing about this talk.
+
+
+	CREDIBILITY
+		Aaron Thomas, first year undergraduate student at PSU Berks
+			going for SRA Major
+			previously spoken at Bloomcon 2017
+
+	THESIS
+		Bad people can steal fliers and then put up copies with their benign QR codes replaced with malicious QR codes.
+
+	GO OVER MAIN POINTS
+		We are going to go over some basic information about QR codes
+		then we will examine what I have dubbed the antiflier attack
+		finally we will examine some security controls and policy to stop and detect the attack
+
+	WIIFM?
+		After this talk is done you'll know more about QR codes than most people and have a good idea of what policy and controls can be used to mitigate an antiflier attack from affecting you.
+
+
+I hope your barcode scanners are ready, because we are about to look at some QR codes.
+All of these QR codes work on my android phone. If you have an iPhone some of these might not work.
+
+
+TALKING ABOUT QR CODES
+	QR codes are 2d barcodes.
+	When you go to a store and buy something they scan a 1d barcode.
+	You can encode anything inside of a barcode.
+
+	SLIDE WITH BASIC HELLO WORLD BARCODE
+		Most of the time QR codes contain text. Scan this QR code.
+
+	SLIDE WITH MY CONTACT INFORMATION
+		You can encode contact info in a QR code.
+		This one has my name and EMAIL address.
+		(maybe also a burner phone)
+
+	SLIDE WITH GEOLOCATION DATA
+		You can encode geographical coordinates in a QR code.
+
+	SLIDE WITH SMS (if you get a burner)
+		QR codes can even encode an SMS message.
+		This one will have you send a text message to my burner phone.
+
+	SLIDE WITH WIFI (dummy network)
+		QR codes can encode your wifi password and let people connect to it.
+		It is important to note if you tweet a picture containing a QR code containing your wifi password then anyone can see it. Your wifi password is ENCODED in the image but exists in plaintext. It is NOT ENCRYPTED.
+
+	SLIDE WITH LINK (to techtalklive? or my twitter? rickroll...?)
+		Most of the time when you encounter a QR code in the wild it will be a link to some website.
+
+
+With a good understanding of what can go into a QR code let's look at what an attacker can do.
+
+
+ANTIFLIER ATTACK
+	BASICS
+		The premise of the antiflier attack is simple. A bad person steals a flier and puts up copies with modified QR codes.
+
+	BAD THINGS ATTACKER CAN DO
+		Control what URLs your employees visit on their phones.
+			run malicious javascript in the browser and redirect
+				//do bad things
+				window.location = "example.com";
+			phish with lookalike websites
+			spread propoganda
+		Plant false contact info
+			potentially intercepting confidential data
+		Put a fake wifi password up
+			Now you're in the attacker's network
+			They have traffic which may contain sensitive data
+			They can do a man in the middle
+
+	ATTACK SURFACE
+
+
+	ATTACKER CONSIDERATIONS?
+		How often are there people near the bulletin board who will notice the attacker?
+		Will any of those people do anything if they see someone take a flier from a bulletin board?
+		Will any of them care if they see someone put a flier onto a bulletin board?
+		Is the bulletin board difficult to access?
+		
+	SIMULATE ATTACK
+		Doing it without telling anything is very sketchy, probably illegal.
+		As research it involves deceiving a massive amount of people, probably unethical.
+		That'll be sorted out this summer, then I can do research in the fall.
+		GOALS
+			Doesn't interfere with normal use
+			Log every hit on an antiflier with useful data
+			Protect 'user' privacy
+		SOLUTION:
+			I made it. RedirectLogQ
+			URL redirection that logs every redirect and uses cookies to log duplicate hits.
+			Built on Python and MongoDB
+			FEATURES!
+				Able to have multiple redirect tokens per URL
+					"SADFJN" -> "techtalklive.org"
+					"LKSADF" -> "techtalklive.org"
+					Redirect token is a UUID converted to base62
+					What does a fliertoken look like?
+						Flier = {
+							real_url =  "the url they will be redirected to",
+							token = "the unique base62 string associated with the flier",
+							location = "some string to help remember info about the flier"
+						}   
+				Logs duplicate hits anonymously
+					Every hit we check for our cookie, if the user doesn't have one we give them a cookie.
+					In each hit we log the cookie that we give them/they already had
+					Each cookie is a UUID
+					What does a hit look like?
+						Hit = {
+							time = "when they were redirected",
+							token = "the token they used to be redirected",
+							cookie = "the cookie we gave them"
+						}
+						that!
+			Doesn't interfere with normal use?
+				CHECK! users are redirected with a 303 HTTP response
+			Log every hit on an antiflier with useful metadata?
+				CHECK! we get lots of useful data
+			Protect 'user' privacy?
+				CHECK! we don't store any PII, only a randomly generated cookie that we feed them
+			PROBLEMS?
+				If user disables cookies or frequently deletes them it may affect our data.
+
+			BTW it's released under GPL-3.0
+			github.com/metruption/redirectlogq
+
+
+QUOTE ABOUT KNOW YOUR ENEMY
+make a joke about sun tzu quotes
+then attribute the quote to green day
+
+
+CONTROLS AND POLICY
+	GOALS
+		Limit access to physical bulletin boards
+		Quickly identify and remove any antifliers which may have been posted
+		Have users who notice something is wrong and speak up about it
+
+	LIMIT ACCESS
+		Glass case makes it much more difficult to stealthily manipulate the contents of a bulletin board
+		Put a lock on the glass case
+			something about lockpicking
+
+	IDENTIFY AND REMOVE ANTIFLIERS
+		We already have limited physical access, make all the fliers go through one place.
+		Regularly checking the QR codes for parity is still a pain in the but, there's got to be a better way.
+		Is there a way to make all of the QR codes with links to websites easily identifiable?
+			yes!
+			Setup your own RedirectLogQ server!
+			Any QR code with a url that doesn't go through your server is unregulated and shouldn't be there.
+				take it down!
+			also helps users notice something is wrong...
+				why is there a link to <phishing link>? normally they are company.com/redirect=
+			You can control which redirect tokens exist, attackers won't be able to use proper redirect URLs.
+
+	PROBLEMS
+		We're only convering QR codes containing URLS (if you think of a solution before talk put this in)
+			Don't use QR codes containing sensitive data.
+			Verifying QR codes with contact info or geocoordinates can't be easily done with RedirectLogQ.
+			Print a phone number or email address directly on the flier.
+			Print the address directly on the flier.
+
+	POLICY
+	 	Make sure only verified QR codes get posted
+	 	Verified QR codes go through an internal RedirectLogQ server
+	 		All other QR codes (including ones that aren't URLs) are unverified
+	 	Only certified individuals may add/remove fliers to/from the bulletin boards
+	 	Promote security minded culture, report things which seem amiss
+	 	Make sure the Bulletin Board Guardian likes their job.
+
+
+SIGNAL OF CONCLUSION (aaron write this)
+
+SUMMARY
+	At first looked at what QR codes are and how they can be used, then we discussed what an antiflier attack is, just moments ago we designed policy prevent, identify, and mitigate an antiflier attack.
+
+CLINCHER
+	I'll leave you with one last QR code to scan. It has a link to slides, notes, and other various things related to this talk which you may find useful. They were very useful to me.
+
+ANY QUESTIONS?!
